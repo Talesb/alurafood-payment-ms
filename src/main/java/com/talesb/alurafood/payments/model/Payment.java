@@ -2,6 +2,7 @@ package com.talesb.alurafood.payments.model;
 
 import java.math.BigDecimal;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -56,9 +57,11 @@ public class Payment {
 	private Status status;
 
 	@NotNull
-	private Long periodId;
+	@Column(name="order_id")
+	private Long orderId;
 
 	@NotNull
+	@Column(name="payment_method_id")
 	private Long paymentMethodId;
 
 }

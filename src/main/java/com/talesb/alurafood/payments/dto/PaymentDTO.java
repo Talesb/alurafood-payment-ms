@@ -18,7 +18,7 @@ public class PaymentDTO {
 	private String expiration;
 	private String code;
 	private Status status;
-	private Long periodId;
+	private Long orderId;
 	private Long paymentMethodId;
 
 }
