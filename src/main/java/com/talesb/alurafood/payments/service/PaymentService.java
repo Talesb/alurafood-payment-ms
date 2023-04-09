@@ -1,7 +1,10 @@
 package com.talesb.alurafood.payments.service;
 
+import java.util.Optional;
+
 import javax.persistence.EntityNotFoundException;
 
+import com.talesb.alurafood.payments.clients.OrderHttpClient;
 import com.talesb.alurafood.payments.dto.PaymentDTO;
 import com.talesb.alurafood.payments.model.Payment;
 import com.talesb.alurafood.payments.model.Status;
@@ -21,6 +24,9 @@ public class PaymentService {
 
 	@Autowired
 	private ModelMapper modelMapper;
+
+	@Autowired
+	private OrderHttpClient httpClient;
 
 	public Page<PaymentDTO> getAll(Pageable pagination) {
 		return paymentRepository.findAll(pagination).map(p -> modelMapper.map(p, PaymentDTO.class));
@@ -47,6 +53,32 @@ public class PaymentService {
 
 	public void deletePayment(Long id) {
 		this.paymentRepository.deleteById(id);
+	}
+
+	public void confirmPayment(Long id) {
+		Optional<Payment> payment = paymentRepository.findById(id);
+
+		if (!payment.isPresent()) {
+			throw new EntityNotFoundException();
+		}
+
+		payment.get().setStatus(Status.CONFIRMADO);
+		paymentRepository.save(payment.get());
+
+		httpClient.updatePayment(payment.get().getOrderId());
+	}
+
+	public void updateStatus(Long id) {
+
+		Optional<Payment> payment = paymentRepository.findById(id);
+
+		if (!payment.isPresent()) {
+			throw new EntityNotFoundException();
+		}
+
+		payment.get().setStatus(Status.CONFIRMADO_SEM_INTEGRACAO);
+		paymentRepository.save(payment.get());
+
 	}
 
 }
