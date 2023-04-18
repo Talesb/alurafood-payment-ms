@@ -8,6 +8,8 @@ import javax.validation.constraints.NotNull;
 import com.talesb.alurafood.payments.dto.PaymentDTO;
 import com.talesb.alurafood.payments.service.PaymentService;
 
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,9 @@ public class PaymentController {
 	@Autowired
 	private PaymentService paymentService;
 
+	@Autowired
+	private RabbitTemplate rabbitTemplate;
+
 	@GetMapping
 	public Page<PaymentDTO> listPayments(@PageableDefault(size = 10) Pageable pagination) {
 		return paymentService.getAll(pagination);
@@ -51,6 +56,10 @@ public class PaymentController {
 
 		PaymentDTO payment = paymentService.createPayment(dto);
 		URI paymentURI = uriBuilder.path("/payments/{id}").buildAndExpand(payment.getId()).toUri();
+
+		Message message = new Message(("Payment created, id: " + payment.getId()).getBytes());
+
+		rabbitTemplate.send("payment.finished", message);
 
 		return ResponseEntity.created(paymentURI).body(payment);
 
@@ -75,14 +84,13 @@ public class PaymentController {
 	}
 
 	@PatchMapping("/{id}/confirm")
-	@CircuitBreaker(name="updateOrder",fallbackMethod = "paymentAuthorizedWihoutFinishingIntegration")
+	@CircuitBreaker(name = "updateOrder", fallbackMethod = "paymentAuthorizedWihoutFinishingIntegration")
 	public void confirmPaymen(@PathVariable @NotNull Long id) {
 		paymentService.confirmPayment(id);
 	}
 
-	public void paymentAuthorizedWihoutFinishingIntegration(Long id,Exception e) {
+	public void paymentAuthorizedWihoutFinishingIntegration(Long id, Exception e) {
 		paymentService.updateStatus(id);
 	}
-	
-	
+
 }
